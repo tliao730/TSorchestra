@@ -5,6 +5,25 @@
 > work with full context. See the "Continuing this work in a new session"
 > section at the bottom before starting.
 
+## Status at a glance (update as you go)
+
+- ✅ **Code written & committed** — the `Toto2` adapter
+  ([src/models/foundation/toto2.py](src/models/foundation/toto2.py)), its
+  registration ([src/models/foundation/\_\_init\_\_.py](src/models/foundation/__init__.py)),
+  and the pipeline wiring ([pipeline/eval.py](pipeline/eval.py)) are all done.
+  This code was written on a machine **without** `toto-2` installed, so its
+  `toto2` API usage (class names, config fields) reflects careful reading of
+  Datadog's source but has **not been import-checked** — verify on first run.
+- ⏳ **Environment not yet built** — `environment.yml` still pins
+  `python=3.11.11` and does **not** list `toto-2`. The Python 3.12 bump +
+  `toto-2` install (Approach §2) is the next real step, and the riskiest.
+- ⏳ **Nothing run / tested yet** — no smoke test, no GIFT-Eval sweep, no
+  submission assembled (Approach §4, Verification §1–5). Testing is
+  deliberately deferred per user instruction until explicitly asked.
+
+**Where to work:** `/work/nvme/bcqc/tliao2/` on Delta (see "Environment
+note"). Not backed up → push to git often.
+
 ## Context
 
 TSOrchestra (a fork of TimeCopilot) currently only supports Toto **1.0** via
@@ -52,48 +71,54 @@ array). It is not runnable on a local laptop.
 
 The user runs this on **Delta** (NCSA's GPU cluster) via SSH / VS Code
 Remote-SSH. Delta has several storage tiers, but note that **`$SCRATCH` is
-not set on this account** — do not rely on it. This work uses the user's
-**`bdem` allocation** instead, which has plenty of free space (unlike the
-`bcqc` allocation, whose `/projects` and `/work/hdd` quotas are nearly full):
+not set on this account** — do not rely on it.
 
-- **codebase + final results → `/projects/bdem/tliao2/`** — the `projects`
-  tier is backed up and appropriate for source code and durable outputs
-  (`all_results.csv`, `config.json` for the GIFT-Eval submission). The
-  `bdem` allocation here has a 500 GB soft quota and is currently near-empty.
-- **large caches (model checkpoints + datasets) → `/work/hdd/bdem/tliao2/`**
-  — the `work` tier is the high-throughput space meant for large job I/O.
-  The `bdem` allocation here has a ~1 TB soft quota and is currently
-  near-empty. Note: there is **no `/work/nvme/bdem`** (only `bcqc` has an
-  NVMe allocation), so `bdem` job I/O runs on the HDD tier — fine for this
-  workload (read checkpoints + datasets once), just not as fast as NVMe.
+**All of this work — codebase, HuggingFace cache, datasets, and results —
+lives under `/work/nvme/bcqc/tliao2/`.** This is the `bcqc` allocation's
+**NVMe `work` tier**: high-throughput solid-state storage, the fastest tier
+available and the right place for the read-heavy checkpoint + dataset I/O
+this eval does. As of this plan it holds ~396 GB of a 500 GB soft quota, so
+there is headroom for this project's ~30–50 GB footprint, but keep an eye on
+it. (The `bcqc` `/projects` and `/work/hdd` tiers are near-full — 890/900 GB
+and 2.25/2.25 TB respectively — so do **not** use those; and there is no
+`/work/nvme/bdem`, only `bcqc` has an NVMe allocation.)
 
-**This project's storage footprint is large and must go on `bdem`, not
-home**:
+**Trade-off to be aware of — the `work` tier is not backed up and may be
+auto-purged after a period of inactivity.** That is fine for re-downloadable
+things (checkpoints, datasets) but means the codebase and final results are
+**not durable here**. Mitigations, both important:
+- The codebase's durability comes from **git**: the fork at
+  `https://github.com/tliao730/TSorchestra` is the backup. Commit and push
+  often; treat the `/work/nvme/bcqc` working copy as disposable.
+- Once the final GIFT-Eval outputs (`all_results.csv`, `config.json`) are
+  produced, **copy them somewhere durable** — commit them to git and/or copy
+  to a backed-up tier such as `/projects/bdem/tliao2/` (the `bdem` projects
+  allocation is near-empty and backed up).
+
+**Why the footprint is large:**
 - The `Datadog/Toto-2.0-2.5B-FT` checkpoint alone is **9.82 GB**
   (`model.safetensors`).
 - The full **GIFT-Eval benchmark** (98 dataset/term configs across many
   domains) is a large multi-GB download in its own right, on top of the
   model checkpoints for every ensemble member (Moirai, Sundial, Toto 1.0,
-  TimesFM). The user's home HF cache is already ~13 GB; expect the full set
-  to grow to ~30–50 GB.
-- Clone the repo into `/projects/bdem/tliao2/` and redirect the HuggingFace
-  cache to the `bdem` work tier so downloads don't fill the small home quota
-  (~100 GB, already ~69 GB used):
-  ```bash
-  # codebase (backed up)
-  cd /projects/bdem/tliao2
-  git clone https://github.com/tliao730/TSorchestra.git
+  TimesFM). Expect the full set to grow to ~30–50 GB.
 
-  # large caches (work tier) — set before any download/run
-  export HF_HOME=/work/hdd/bdem/tliao2/huggingface
-  ```
-  Do **not** clone into `$HOME` — the home quota is small and would fill up
-  quickly from the model cache (HuggingFace downloads to
-  `~/.cache/huggingface` by default, hence the `HF_HOME` redirect above).
-- The `projects` tier is backed up, so final results are durable there. If
-  anything is instead staged under `work` (not backed up, may be purged after
-  inactivity), copy the final `all_results.csv` / `config.json` back to
-  `/projects/bdem/tliao2/` or commit them to git once produced.
+**Setup on a fresh Delta login — clone the fork and point HF cache at the
+NVMe tier before any download/run:**
+```bash
+# codebase (durability = git; treat this copy as disposable)
+cd /work/nvme/bcqc/tliao2
+git clone https://github.com/tliao730/TSorchestra.git
+cd TSorchestra
+
+# large caches (same NVMe tier) — set before any download/run, and
+# persist it so every future shell inherits it
+export HF_HOME=/work/nvme/bcqc/tliao2/huggingface
+echo 'export HF_HOME=/work/nvme/bcqc/tliao2/huggingface' >> ~/.bashrc
+```
+Do **not** clone into `$HOME` — the home quota is small (~100 GB, already
+~69 GB used) and the model cache would fill it quickly (HuggingFace downloads
+to `~/.cache/huggingface` by default, hence the `HF_HOME` redirect above).
 
 ## Repo / git setup
 
@@ -115,66 +140,21 @@ the fork, add the fork as a second remote rather than silently overwriting
 
 ### 1. Add a new `Toto2` adapter: `src/models/foundation/toto2.py`
 
-Subclass `GluonTSForecaster` (not `Forecaster` directly — mirror
-[moirai.py](src/models/foundation/moirai.py) exactly in structure):
+**Status: DONE — the file is already written and committed**
+([src/models/foundation/toto2.py](src/models/foundation/toto2.py)). It
+subclasses `GluonTSForecaster` (not `Forecaster` directly), mirroring
+[moirai.py](src/models/foundation/moirai.py) in structure: a fully-overridden
+`__init__` plus a `get_predictor(prediction_length)` context manager that
+loads `Toto2Model.from_pretrained`, wraps it in `Toto2GluonTSModel` with a
+`Toto2GluonTSModelConfig`, and yields the resulting `PyTorchPredictor`
+(cleaning up GPU memory on exit). It imports
+`from toto2 import Toto2GluonTSModel, Toto2GluonTSModelConfig, Toto2Model`.
 
-```python
-from contextlib import contextmanager
+The import will fail until `toto-2` is installed (section 2) — that is
+expected; the code is complete but not yet runnable. Read the committed file
+for the exact implementation rather than duplicating it here.
 
-import torch
-from gluonts.torch.model.predictor import PyTorchPredictor
-from toto2 import Toto2GluonTSModel, Toto2GluonTSModelConfig, Toto2Model
-
-from src.models.common.gluonts_forecaster import GluonTSForecaster
-
-
-class Toto2(GluonTSForecaster):
-    """Toto 2.0 ... (docstring mirrors Toto 1.0's style, links to
-    https://github.com/DataDog/toto and the 2.0 HF collection)"""
-
-    def __init__(
-        self,
-        repo_id: str = "Datadog/Toto-2.0-2.5B-FT",
-        context_length: int = 4096,
-        batch_size: int = 16,
-        quantiles: list[float] | None = None,
-        target_dim: int = 1,
-        past_feat_dynamic_real_dim: int = 0,
-        alias: str = "Toto2",
-    ):
-        self.repo_id = repo_id
-        self.context_length = context_length
-        self.batch_size = batch_size
-        self.quantiles = quantiles or [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        self.target_dim = target_dim
-        self.past_feat_dynamic_real_dim = past_feat_dynamic_real_dim
-        self.alias = alias
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    @contextmanager
-    def get_predictor(self, prediction_length: int) -> PyTorchPredictor:
-        model = Toto2Model.from_pretrained(self.repo_id, map_location=self.device)
-        model = model.to(self.device).eval()
-        gts_config = Toto2GluonTSModelConfig(
-            prediction_length=prediction_length,
-            context_length=self.context_length,
-            target_dim=self.target_dim,
-            past_feat_dynamic_real_dim=self.past_feat_dynamic_real_dim,
-            quantiles=self.quantiles,
-        )
-        gts_model = Toto2GluonTSModel(model, gts_config).to(self.device).eval()
-        predictor = gts_model.create_predictor(
-            batch_size=self.batch_size,
-            device=self.device,
-        )
-        try:
-            yield predictor
-        finally:
-            del predictor, gts_model, model
-            torch.cuda.empty_cache()
-```
-
-Notes:
+Notes (design decisions baked into the committed file):
 - `GluonTSForecaster.__init__` (base class) takes `repo_id, filename, alias,
   num_samples` — but Toto2 doesn't use `filename`/`num_samples` (it's
   quantile-based, not sample-based) or HF `hf_hub_download`/`torch.load`
@@ -189,20 +169,60 @@ Notes:
 - `num_samples` is passed by `GluonTSForecaster.forecast()` into
   `predictor.predict(gluonts_dataset, num_samples=self.num_samples)`
   ([gluonts_forecaster.py:183](src/models/common/gluonts_forecaster.py#L183)).
-  Since `Toto2`'s predictor is quantile-based (`QuantileForecastGenerator`),
-  confirm during implementation whether `PyTorchPredictor.predict()` silently
-  ignores `num_samples` for quantile forecasters (GluonTS convention is that
-  it does) — if not, set `self.num_samples = None` explicitly or check
-  GluonTS's `PyTorchPredictor.predict` signature.
+  `Toto2`'s predictor is quantile-based — its output head is a
+  `QuantileKnotsOutputHead` feeding GluonTS's `QuantileForecastGenerator`
+  (confirmed in toto2's `model.py`), and the GluonTS convention is that
+  `QuantileForecastGenerator` ignores `num_samples`. So the value is harmless,
+  but **`self.num_samples` must still be set** (any int) or
+  `forecast()` raises `AttributeError` at that line. The adapter sets
+  `self.num_samples = 100`. Still worth a quick runtime check (Verification
+  step 2b) that no warning/error surfaces.
+- The GluonTS config class is `Toto2GluonTSModelConfig` (a dataclass, verified
+  in toto2's `configuration.py`). Required fields (no default):
+  `prediction_length`, `context_length`, `target_dim`. Useful optional fields
+  with defaults: `past_feat_dynamic_real_dim=0`, `feat_dynamic_real_dim=0`,
+  `decode_block_size=None`, `has_missing_values=True`,
+  `quantiles=[0.1..0.9]`, `imputation_internal="ffill"`,
+  `scaler_fallback_min_obs=8`, `quantile_real_cap_k=1e4`. The adapter exposes
+  `decode_block_size` as a constructor arg (default `None` = decode the whole
+  horizon in one pass; set a multiple of the model's patch size to bound GPU
+  memory on long horizons — likely needed for the 2.5B checkpoint on the
+  longer GIFT-Eval terms).
 - Register in [src/models/foundation/\_\_init\_\_.py](src/models/foundation/__init__.py):
   add `from .toto2 import Toto2` and add `"Toto2"` to `__all__`.
 
 ### 2. Dependency changes: `environment.yml`
 
-- Add `toto-2` (the actual PyPI/package name confirmed from
-  `toto2/pyproject.toml`, NOT `toto-models`) as a new pip dependency.
+- Add `toto-2` as a new pip dependency. The distribution name is `toto-2`
+  (confirmed from `toto2/pyproject.toml`: `name = "toto-2"`, `version =
+  "2.0.0"`), imported as `from toto2 import ...`. It is **not on PyPI as a
+  normal wheel** — install it from Datadog's git repo, from the `toto2`
+  subdirectory:
+  ```
+  pip install "toto-2 @ git+https://github.com/DataDog/toto.git#subdirectory=toto2"
+  ```
+  Its own dependencies (all satisfiable): `torch>=2.4.0`, `einops>=0.7.0`,
+  `numpy>=1.26.0`, `gluonts[torch]>=0.16.0`, `huggingface-hub>=0.20.0`,
+  `safetensors>=0.4.0`, `jaxtyping>=0.2.25`, `dd-unit-scaling>=0.1.0`,
+  `matplotlib>=3.9.0`. Note the extra transitive dep **`dd-unit-scaling`**
+  (imported as `dd_unit_scaling` / `uu` inside toto2) — it also installs from
+  git and provides the u-μP unit-scaling layers the model uses.
 - **Python version conflict**: `toto-2` requires Python **3.12+**; this repo's
   `environment.yml` pins `python=3.11.11` ([environment.yml:21](environment.yml#L21)).
+
+  **Why 3.12 (verified by reading toto2's source, not just its metadata):**
+  `toto2/pyproject.toml` declares `requires-python = ">=3.12"` and
+  `target-version = "py312"`, so **pip will refuse to install it on 3.11**
+  regardless of what the code actually uses. Reading the source, the highest
+  language feature actually used is `from typing import NotRequired` (PEP 655,
+  added to `typing` in Python **3.11**) in the `Toto2ModelInputs` TypedDict —
+  no PEP 695 generics or other 3.12-only *syntax* were found in
+  `model.py`/`configuration.py`. So the `>=3.12` floor is largely Datadog's
+  **support policy**, not a hard syntactic requirement. In principle one could
+  bypass `requires-python` and install on 3.11, but that fights the upstream
+  declaration and risks 3.12-only code in the transitive `dd-unit-scaling`
+  dep (not inspected) — **not worth it. Bump the shared env to 3.12 as
+  planned.**
   Because `Toto2` must live in the **same process** as the other ensemble
   models (see pipeline section below — it's a peer in `SLSQPEnsemble`, not a
   standalone job), an isolated env is not viable long-term: **the shared `tso`
@@ -261,13 +281,16 @@ Notes:
 
 ### 3. Wire into the eval pipeline: `pipeline/eval.py`
 
-`Toto2` becomes a **permanent member of the ensemble**, alongside Moirai,
-Sundial, Toto (1.0), and TimesFM — not a one-off standalone script. Update:
+**Status: DONE — already committed.** `Toto2` is now a **permanent member of
+the ensemble**, alongside Moirai, Sundial, Toto (1.0), and TimesFM — not a
+one-off standalone script. Two edits, both already made:
 
-- [pipeline/eval.py:11](pipeline/eval.py#L11): add `Toto2` to the import from
+- [src/models/foundation/\_\_init\_\_.py](src/models/foundation/__init__.py):
+  `from .toto2 import Toto2` added, and `"Toto2"` added to `__all__`.
+- [pipeline/eval.py:11](pipeline/eval.py#L11): `Toto2` added to the import from
   `src.models.foundation`.
-- [pipeline/eval.py:21-26](pipeline/eval.py#L21-L26): add `Toto2(batch_size=cfg.batch_size)`
-  to the `models` list passed into `SLSQPEnsemble`, e.g.:
+- [pipeline/eval.py:21-27](pipeline/eval.py#L21-L27): `Toto2(batch_size=cfg.batch_size)`
+  added to the `models` list passed into `SLSQPEnsemble`:
   ```python
   models = [
       Moirai(batch_size=cfg.batch_size),
@@ -362,7 +385,7 @@ not block on running tests until the user asks for it.
 This plan was written and approved in a Claude Code session running locally
 (no GPU, no Delta access). The actual implementation is meant to happen in a
 **separate Claude Code session running on Delta** (via VS Code Remote-SSH),
-since that's where the GPU, large scratch storage, and SLURM scheduler are.
+since that's where the GPU, large NVMe storage, and SLURM scheduler are.
 
 If you are a fresh session picking this up on Delta:
 1. Read this whole file — it's the complete, approved plan with all
@@ -370,12 +393,16 @@ If you are a fresh session picking this up on Delta:
    classes, dependency compatibility findings). You should not need to
    re-research Toto2's source code or GIFT-Eval's submission format from
    scratch — it's all above.
-2. Work under the **`bdem` allocation**, not `$SCRATCH` (which is unset on
-   this account): clone/work in `/projects/bdem/tliao2/` and set
-   `HF_HOME=/work/hdd/bdem/tliao2/huggingface`, per the "Environment note"
-   section above.
-3. Follow the "Approach" sections in order (1–4). Testing (see Verification)
-   is deferred per user instruction — don't run it unprompted.
+2. Work under **`/work/nvme/bcqc/tliao2/`** (the NVMe `work` tier), not
+   `$SCRATCH` (which is unset on this account): clone the fork there and set
+   `HF_HOME=/work/nvme/bcqc/tliao2/huggingface`, per the "Environment note"
+   section above. Remember this tier is not backed up — push to git often and
+   copy final results to a durable tier.
+3. Approach §1 (adapter code) and §3 (pipeline wiring) are **already done and
+   committed** — read them for context, but the next real work is **§2**
+   (bump the env to Python 3.12 and install `toto-2`), then §4 (assemble the
+   submission). Testing (see Verification) is deferred per user instruction —
+   don't run it unprompted.
 4. This file can be deleted or moved once the work is merged/no longer
    needed for reference — it's a working document, not permanent repo
    documentation.
