@@ -20,11 +20,11 @@
   and resolves automatically). The `tso` env lives at
   `/work/nvme/bcqc/tliao2/conda/envs/tso` (conda via
   `module load miniforge3-python`; envs_dirs/pkgs_dirs set in `~/.condarc`).
-  **Do not put conda envs on `/projects/bdem`** — that allocation is over its
+  **Do not put anything on `/projects/bdem`** — that allocation is over its
   file (inode) quota (822k used / 750k soft as of 2026-07-09), which fails
-  writes with `Disk quota exceeded` even though block space is free. This
-  also puts the "copy final results to /projects/bdem" durability step at
-  risk — verify the inode situation before relying on it.
+  writes with `Disk quota exceeded` even though block space is free. Per
+  user decision, everything (env, caches, results) stays on `/work/nvme`;
+  durability comes from git, not a backup tier.
 - ✅ **Submission tooling written** — single-model scoring entrypoint
   ([pipeline/eval_toto2.py](pipeline/eval_toto2.py)), its SLURM array script
   ([cli/eval_toto2.sh](cli/eval_toto2.sh), array 0–96, account
@@ -107,9 +107,10 @@ things (checkpoints, datasets) but means the codebase and final results are
   `https://github.com/tliao730/TSorchestra` is the backup. Commit and push
   often; treat the `/work/nvme/bcqc` working copy as disposable.
 - Once the final GIFT-Eval outputs (`all_results.csv`, `config.json`) are
-  produced, **copy them somewhere durable** — commit them to git and/or copy
-  to a backed-up tier such as `/projects/bdem/tliao2/` (the `bdem` projects
-  allocation is near-empty and backed up).
+  produced, **commit them to git** — that is the durable copy. Do **not**
+  copy to `/projects/bdem`: it is over its file (inode) quota (822k used /
+  750k soft as of 2026-07-09) and writes there fail with `Disk quota
+  exceeded`. Per user decision everything stays on `/work/nvme`.
 
 **Why the footprint is large:**
 - The `Datadog/Toto-2.0-2.5B-FT` checkpoint alone is **9.82 GB**
@@ -119,18 +120,17 @@ things (checkpoints, datasets) but means the codebase and final results are
   model checkpoints for every ensemble member (Moirai, Sundial, Toto 1.0,
   TimesFM). Expect the full set to grow to ~30–50 GB.
 
-**Setup on a fresh Delta login — clone the fork and point HF cache at the
-NVMe tier before any download/run:**
+**Setup on a fresh Delta login — clone the fork and point the HF cache off
+`$HOME` before any download/run:**
 ```bash
 # codebase (durability = git; treat this copy as disposable)
 cd /work/nvme/bcqc/tliao2
 git clone https://github.com/tliao730/TSorchestra.git
 cd TSorchestra
 
-# large caches (same NVMe tier) — set before any download/run, and
-# persist it so every future shell inherits it
-export HF_HOME=/work/nvme/bcqc/tliao2/huggingface
-echo 'export HF_HOME=/work/nvme/bcqc/tliao2/huggingface' >> ~/.bashrc
+# large HF cache (bdem work-hdd tier: ~177 GB block / ~694k inode headroom
+# as of 2026-07-09) — already exported in ~/.bashrc on this account
+export HF_HOME=/work/hdd/bdem/tliao2/huggingface
 ```
 Do **not** clone into `$HOME` — the home quota is small (~100 GB, already
 ~69 GB used) and the model cache would fill it quickly (HuggingFace downloads
@@ -411,9 +411,11 @@ If you are a fresh session picking this up on Delta:
    scratch — it's all above.
 2. Work under **`/work/nvme/bcqc/tliao2/`** (the NVMe `work` tier), not
    `$SCRATCH` (which is unset on this account): clone the fork there and set
-   `HF_HOME=/work/nvme/bcqc/tliao2/huggingface`, per the "Environment note"
-   section above. Remember this tier is not backed up — push to git often and
-   copy final results to a durable tier.
+   note the HF cache lives at `HF_HOME=/work/hdd/bdem/tliao2/huggingface`
+   (already exported in `~/.bashrc`), per the "Environment note" section
+   above. Remember these tiers are not backed up — push to git often;
+   final results are committed to git (do **not** copy to `/projects/bdem`,
+   it is over its inode quota).
 3. Approach §1 (adapter code) and §3 (pipeline wiring) are **already done and
    committed** — read them for context, but the next real work is **§2**
    (bump the env to Python 3.12 and install `toto-2`), then §4 (assemble the
