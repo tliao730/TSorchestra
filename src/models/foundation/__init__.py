@@ -4,6 +4,7 @@ from .tabpfn import TabPFN
 from .timesfm import TimesFM
 from .tirex import TiRex
 from .toto import Toto
+from .toto2 import Toto2
 
 __all__ = [
     "Moirai",
@@ -12,4 +13,5 @@ __all__ = [
     "TimesFM",
     "TiRex",
     "Toto",
+    "Toto2",
 ]

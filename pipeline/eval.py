@@ -8,7 +8,7 @@ from src.data.dataset import Dataset
 from src.data.evaluator import Evaluator
 from src.models.common.gluonts_predictor import GluonTSPredictor
 from src.models.ensembles.slsqp import SLSQPEnsemble
-from src.models.foundation import Moirai, Sundial, Toto, TimesFM
+from src.models.foundation import Moirai, Sundial, Toto, Toto2, TimesFM
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -22,6 +22,7 @@ def main(cfg: DictConfig) -> None:
         Moirai(batch_size=cfg.batch_size),
         Sundial(batch_size=cfg.batch_size),
         Toto(batch_size=cfg.batch_size),
+        Toto2(batch_size=cfg.batch_size),
         TimesFM(batch_size=cfg.batch_size),
     ]
 
