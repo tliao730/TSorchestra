@@ -414,4 +414,7 @@ dependencies:
       - yarl==1.22.0
       - zipp==3.23.0
       - zstandard==0.25.0
-prefix: /projects/bdem/tliao2/conda/envs/tso
+# NOTE: /projects/bdem is over its file (inode) quota — conda envs must live
+# on a tier with inode headroom (NVMe work tier; not backed up, but envs are
+# rebuildable from this file).
+prefix: /work/nvme/bcqc/tliao2/conda/envs/tso

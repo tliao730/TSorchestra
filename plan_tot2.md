@@ -18,8 +18,13 @@
   `prophet==1.3.0` (first release with 3.12 wheels), and `toto-2==2.0.0`
   (now on PyPI — no git install needed; `dd-unit-scaling` is also on PyPI
   and resolves automatically). The `tso` env lives at
-  `/projects/bdem/tliao2/conda/envs/tso` (conda via
+  `/work/nvme/bcqc/tliao2/conda/envs/tso` (conda via
   `module load miniforge3-python`; envs_dirs/pkgs_dirs set in `~/.condarc`).
+  **Do not put conda envs on `/projects/bdem`** — that allocation is over its
+  file (inode) quota (822k used / 750k soft as of 2026-07-09), which fails
+  writes with `Disk quota exceeded` even though block space is free. This
+  also puts the "copy final results to /projects/bdem" durability step at
+  risk — verify the inode situation before relying on it.
 - ✅ **Submission tooling written** — single-model scoring entrypoint
   ([pipeline/eval_toto2.py](pipeline/eval_toto2.py)), its SLURM array script
   ([cli/eval_toto2.sh](cli/eval_toto2.sh), array 0–96, account

@@ -28,7 +28,8 @@ mkdir -p ./output/logs
 source ./cli/utils.sh
 
 # Activate the tso env via the miniforge3 module's conda (envs live in
-# /projects/bdem/tliao2/conda/envs per ~/.condarc).
+# /work/nvme/bcqc/tliao2/conda/envs per ~/.condarc — /projects/bdem is over
+# its inode quota and cannot hold a conda env).
 source /sw/rh9.4/python/miniforge3/etc/profile.d/conda.sh
 conda activate tso
 
