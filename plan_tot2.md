@@ -14,12 +14,23 @@
   This code was written on a machine **without** `toto-2` installed, so its
   `toto2` API usage (class names, config fields) reflects careful reading of
   Datadog's source but has **not been import-checked** — verify on first run.
-- ⏳ **Environment not yet built** — `environment.yml` still pins
-  `python=3.11.11` and does **not** list `toto-2`. The Python 3.12 bump +
-  `toto-2` install (Approach §2) is the next real step, and the riskiest.
+- ✅ **Environment built** — `environment.yml` now pins `python=3.12`,
+  `prophet==1.3.0` (first release with 3.12 wheels), and `toto-2==2.0.0`
+  (now on PyPI — no git install needed; `dd-unit-scaling` is also on PyPI
+  and resolves automatically). The `tso` env lives at
+  `/projects/bdem/tliao2/conda/envs/tso` (conda via
+  `module load miniforge3-python`; envs_dirs/pkgs_dirs set in `~/.condarc`).
+- ✅ **Submission tooling written** — single-model scoring entrypoint
+  ([pipeline/eval_toto2.py](pipeline/eval_toto2.py)), its SLURM array script
+  ([cli/eval_toto2.sh](cli/eval_toto2.sh), array 0–96, account
+  `bdem-delta-gpu`), and the submission assembler
+  ([pipeline/assemble_submission.py](pipeline/assemble_submission.py)) which
+  writes `results/all_results/Toto_2_0_2_5B_FT/{all_results.csv,config.json}`.
 - ⏳ **Nothing run / tested yet** — no smoke test, no GIFT-Eval sweep, no
-  submission assembled (Approach §4, Verification §1–5). Testing is
-  deliberately deferred per user instruction until explicitly asked.
+  submission assembled (Verification §1–5). Testing is deliberately deferred
+  per user instruction until explicitly asked. Note the GIFT-Eval **datasets
+  are not downloaded yet** (no `data/` dir, no `.env`) — that download is the
+  first prerequisite of any eval run.
 
 **Where to work:** `/work/nvme/bcqc/tliao2/` on Delta (see "Environment
 note"). Not backed up → push to git often.

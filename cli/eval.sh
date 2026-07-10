@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=slsqp_eval
-#SBATCH --array=0-97
+#SBATCH --array=0-96
 #SBATCH --partition=gpuA40x4     
 #SBATCH --mem=200G     
 #SBATCH --nodes=1
@@ -48,5 +48,5 @@ if python -m pipeline.eval -cp ../conf \
     exit 0
 else
     log_error "Job failed for $(get_slurm_message)!" >&2
-    exti 1
+    exit 1
 fi
