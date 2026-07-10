@@ -14,7 +14,12 @@
   This code was written on a machine **without** `toto-2` installed, so its
   `toto2` API usage (class names, config fields) reflects careful reading of
   Datadog's source but has **not been import-checked** — verify on first run.
-- ✅ **Environment built** — `environment.yml` now pins `python=3.12`,
+- ✅ **Environment built & import-verified** (2026-07-09) — Python 3.12.12,
+  torch 2.9.0+cu128; `from toto2 import ...` and all seven foundation model
+  classes (incl. `Toto2`) import cleanly, and `Toto2()` instantiates.
+  Verification step 1 is therefore done; steps 2–5 (forecast smoke test,
+  eval runs, submission) remain and are run by the user personally.
+- ✅ `environment.yml` pins `python=3.12`,
   `prophet==1.3.0` (first release with 3.12 wheels), and `toto-2==2.0.0`
   (now on PyPI — no git install needed; `dd-unit-scaling` is also on PyPI
   and resolves automatically). The `tso` env lives at
