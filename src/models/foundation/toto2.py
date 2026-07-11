@@ -100,11 +100,25 @@ class Toto2(GluonTSForecaster):
         # the quantile-based predictor ignores it.
         self.num_samples = 100
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # Loaded lazily on first use and reused across get_predictor() calls:
+        # GluonTSForecaster.forecast() enters get_predictor() once per batch
+        # of series, and re-loading the 2.5B checkpoint each time both wastes
+        # minutes per batch and leaks GPU memory (the per-call copies were
+        # observed to accumulate until CUDA OOM after ~4 batches on an A40).
+        self._model: Toto2Model | None = None
+
+    @property
+    def model(self) -> Toto2Model:
+        if self._model is None:
+            model = Toto2Model.from_pretrained(
+                self.repo_id,
+                map_location=self.device,
+            )
+            self._model = model.to(self.device).eval()
+        return self._model
 
     @contextmanager
     def get_predictor(self, prediction_length: int) -> PyTorchPredictor:
-        model = Toto2Model.from_pretrained(self.repo_id, map_location=self.device)
-        model = model.to(self.device).eval()
         gts_config = Toto2GluonTSModelConfig(
             prediction_length=prediction_length,
             context_length=self.context_length,
@@ -113,7 +127,9 @@ class Toto2(GluonTSForecaster):
             decode_block_size=self.decode_block_size,
             quantiles=self.quantiles,
         )
-        gts_model = Toto2GluonTSModel(model, gts_config).to(self.device).eval()
+        # The GluonTS wrapper is a thin shell around the cached model —
+        # rebuilding it per horizon is cheap; only the weights are shared.
+        gts_model = Toto2GluonTSModel(self.model, gts_config).to(self.device).eval()
         predictor = gts_model.create_predictor(
             batch_size=self.batch_size,
             device=self.device,
@@ -121,5 +137,5 @@ class Toto2(GluonTSForecaster):
         try:
             yield predictor
         finally:
-            del predictor, gts_model, model
+            del predictor, gts_model
             torch.cuda.empty_cache()
