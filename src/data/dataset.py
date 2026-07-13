@@ -84,6 +84,12 @@ class Dataset:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+        # Default test_split and max_windows if not provided (GIFT-Eval conventions)
+        if not hasattr(self, "test_split"):
+            self.test_split = 0.5
+        if not hasattr(self, "max_windows"):
+            self.max_windows = 4
+
     @cached_property
     def hf_dataset(self) -> HFDataset:
         """

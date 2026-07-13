@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=toto2_eval
-#SBATCH --array=0-96
-#SBATCH --partition=gpuA40x4
+#SBATCH --array=0-96%4
+#SBATCH --partition=gpuA100x4
 #SBATCH --mem=128G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -9,7 +9,7 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --gpu-bind=closest
 #SBATCH --account=bdem-delta-gpu
-#SBATCH --time=12:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=output/logs/%x/out/%A/%a.out
 #SBATCH --error=output/logs/%x/err/%A/%a.err
 #SBATCH --mail-user=tliao730@usc.edu
