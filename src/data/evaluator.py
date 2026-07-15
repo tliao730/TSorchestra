@@ -50,7 +50,7 @@ class Evaluator:
             "car_parts_with_missing": "car_parts",
         }
         if "/" in self.dataset.name:
-            ds_key = self.dataset.name.split("/").iloc[0]
+            ds_key = self.dataset.name.split("/")[0]
             ds_key = ds_key.lower()
         else:
             ds_key = self.dataset.name.lower()
