@@ -1,24 +1,28 @@
 #!/bin/bash
 #SBATCH --job-name=slsqp_eval
 #SBATCH --array=0-96
-#SBATCH --partition=gpuA40x4     
-#SBATCH --mem=200G     
+#SBATCH --partition=gpuA100x4
+#SBATCH --mem=200G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=16   
-#SBATCH --constraint="scratch"
+#SBATCH --cpus-per-task=16
 #SBATCH --gpus-per-node=1
 #SBATCH --gpu-bind=closest
-#SBATCH --account=  # TODO: Enter your SLURM account 
+#SBATCH --account=bdem-delta-gpu
 #SBATCH --time=24:00:00
 #SBATCH --output=output/logs/%x/out/%A/%a.out
 #SBATCH --error=output/logs/%x/err/%A/%a.err
-#SBATCH --mail-user=  # TODO: Enter your email address 
+#SBATCH --mail-user=tliao730@usc.edu
 #SBATCH --mail-type=BEGIN,END,FAIL
 
 mkdir -p ./output/logs
 source ./cli/utils.sh
 activate_conda_env
+
+# Keep HuggingFace downloads (checkpoints incl. the 2.5B Toto2) off the small
+# $HOME quota — the ensemble pulls several foundation-model checkpoints.
+export HF_HOME="${HF_HOME:-/work/hdd/bdem/tliao2/huggingface}"
+
 log_info "Starting $(get_slurm_message)"
 
 # Default to the M4 Hourly dataset (short-term) if not using SLURM

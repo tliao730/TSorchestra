@@ -30,12 +30,23 @@
   writes with `Disk quota exceeded` even though block space is free. Per
   user decision, everything (env, caches, results) stays on `/work/nvme`;
   durability comes from git, not a backup tier.
-- ✅ **Submission tooling written** — single-model scoring entrypoint
-  ([pipeline/eval_toto2.py](pipeline/eval_toto2.py)), its SLURM array script
-  ([cli/eval_toto2.sh](cli/eval_toto2.sh), array 0–96, account
-  `bdem-delta-gpu`), and the submission assembler
-  ([pipeline/assemble_submission.py](pipeline/assemble_submission.py)) which
-  writes `results/all_results/Toto_2_0_2_5B_FT/{all_results.csv,config.json}`.
+- ✅ **Toto2 wired into the ensemble** — [pipeline/eval.py](pipeline/eval.py)
+  builds the SLSQP ensemble from 5 hardcoded models including
+  `Toto2(batch_size=cfg.batch_size)`, so the existing
+  [cli/eval.sh](cli/eval.sh) sweep already scores Toto2 as an ensemble member.
+  The final GIFT-Eval submission is the **5-model ensemble** (not standalone
+  Toto2), so the `model` column is the ensemble alias
+  (`SLSQPEnsemble_5-models_opt-<metric>_<n>-windows`) that the Evaluator writes
+  automatically — no per-model rename.
+  - The standalone single-model entrypoint (`pipeline/eval_toto2.py`) and its
+    SLURM script (`cli/eval_toto2.sh`) were **removed** — the ensemble path
+    covers Toto2, so they were redundant.
+  - The submission assembler
+    ([pipeline/assemble_submission.py](pipeline/assemble_submission.py)) is
+    model-agnostic (scripted, hardened version of
+    [notebooks/results.ipynb](notebooks/results.ipynb)); run it with
+    `--alias SLSQPEnsemble_5-models_opt-mae_1-windows` to assemble the ensemble
+    submission. (Its defaults still target a standalone-Toto2 submission.)
 - ⏳ **Nothing run / tested yet** — no smoke test, no GIFT-Eval sweep, no
   submission assembled (Verification §1–5). Testing is deliberately deferred
   per user instruction until explicitly asked. Note the GIFT-Eval **datasets
