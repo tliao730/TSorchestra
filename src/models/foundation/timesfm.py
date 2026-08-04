@@ -136,12 +136,18 @@ class _TimesFMV2_p5(Forecaster):
         self.batch_size = batch_size
         self.alias = alias
         self.kwargs = kwargs
+        # Cache the loaded+compiled model across forecast() calls. When run inside
+        # the ensemble, GluonTSPredictor.predict() invokes forecast() once per
+        # batch of series, so re-running from_pretrained()+compile() every call
+        # dominated wall-clock — ~1800 reloads on the (very large)
+        # temperature_rain dataset drove a 24h SLURM TIMEOUT. compile() bakes in
+        # max_horizon, so the cache is keyed by prediction_length and rebuilt only
+        # when the horizon changes (constant within a single GIFT-Eval config).
+        # Mirrors the Toto2 caching fix.
+        self._model: TimesFM_2p5_200M_torch | None = None
+        self._compiled_h: int | None = None
 
-    @contextmanager
-    def _get_predictor(
-        self,
-        prediction_length: int,
-    ) -> TimesFM_2p5_200M_torch:
+    def _load_and_compile(self, prediction_length: int) -> TimesFM_2p5_200M_torch:
         # automatically detect the best device
         # https://github.com/AzulGarza/timesfm/blob/b810bbdf9f8a1e66396e7bd5cdb3b005e9116d86/src/timesfm/timesfm_2p5/timesfm_2p5_torch.py#L71
         if os.path.exists(self.repo_id):
@@ -165,11 +171,28 @@ class _TimesFMV2_p5(Forecaster):
         kwargs = {**default_kwargs, **passed_kwargs}
         config = timesfm.ForecastConfig(**kwargs)
         tfm.compile(config)
-        try:
-            yield tfm
-        finally:
-            del tfm
-            torch.cuda.empty_cache()
+        return tfm
+
+    @contextmanager
+    def _get_predictor(
+        self,
+        prediction_length: int,
+    ) -> TimesFM_2p5_200M_torch:
+        # Load+compile once and reuse across forecast() calls. compile() bakes in
+        # max_horizon, so rebuild only if the horizon changes (constant within a
+        # GIFT-Eval config). Without this the ensemble reloaded the checkpoint
+        # once per 128-series batch — ~1800 reloads on temperature_rain -> 24h
+        # TIMEOUT. Mirrors the Toto2 caching fix.
+        if self._model is None or self._compiled_h != prediction_length:
+            if self._model is not None:
+                del self._model
+                self._model = None
+                torch.cuda.empty_cache()
+            self._model = self._load_and_compile(prediction_length)
+            self._compiled_h = prediction_length
+        # No teardown: the compiled model is cached for the next batch. Only one
+        # model is held at a time, so GPU memory stays bounded (200M params).
+        yield self._model
 
     def _predict(
         self,
