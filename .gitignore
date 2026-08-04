@@ -9,3 +9,10 @@
 output/
 __pycache__/
 *.pyc
+
+
+# ignore md file for obsidian
+*TSO*.md
+
+# personal planning scratch notes, no longer tracked
+/plan_tot2.md
