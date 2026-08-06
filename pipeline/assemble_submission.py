@@ -11,9 +11,15 @@ official leaderboard repo (SalesforceAIResearch/gift-eval) expects under
 - ``config.json`` — submission metadata.
 
 Usage (from the repo root):
-    python -m pipeline.assemble_submission                # defaults for Toto2
-    python -m pipeline.assemble_submission --alias Toto2 \
-        --submission-name Toto_2_0_2_5B_FT
+    # Defaults assemble the 5-model SLSQP ensemble submission (the actual
+    # GIFT-Eval entry) with the team's config.json metadata:
+    python -m pipeline.assemble_submission
+
+    # Override any field, e.g. a different ensemble variant or model_type:
+    python -m pipeline.assemble_submission \
+        --alias SLSQPEnsemble_5-models_opt-mse_1-windows \
+        --submission-name SLSQPEnsemble_5-models_opt-mse_1-windows \
+        --model-name SLSQPEnsemble_5-models_opt-mse_1-windows
 """
 
 import argparse
@@ -53,20 +59,51 @@ def expected_num_configs() -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    # Defaults target the 5-model SLSQP ensemble submission — the actual
+    # GIFT-Eval entry (Toto2 is one of its members, not a standalone submission).
     parser.add_argument(
         "--alias",
-        default="Toto2",
+        default="SLSQPEnsemble_5-models_opt-mae_1-windows",
         help="Forecaster alias whose results/<alias>/ tree to assemble.",
     )
     parser.add_argument(
         "--submission-name",
-        default="Toto_2_0_2_5B_FT",
+        default="SLSQPEnsemble_5-models_opt-mae_1-windows",
         help="Folder name for the submission (results/all_results/<name>/).",
     )
     parser.add_argument(
         "--model-name",
-        default="Toto-2.0-2.5B-FT",
+        default="SLSQPEnsemble_5-models_opt-mae_1-windows",
         help="Value written to the `model` column of all_results.csv.",
+    )
+    # config.json fields. Defaults match this team's established leaderboard
+    # entry (TSOrchestra, Melady Lab @ USC, classified agentic). Override per
+    # submission if needed. Valid model_type values (GIFT-Eval): statistical,
+    # deep-learning, agentic, pretrained, zero-shot, fine-tuned.
+    parser.add_argument(
+        "--model-type",
+        default="agentic",
+        help="config.json model_type (one of the 6 GIFT-Eval categories).",
+    )
+    parser.add_argument(
+        "--org",
+        default="Melady Lab @ USC",
+        help="config.json org (organization name shown on the leaderboard).",
+    )
+    parser.add_argument(
+        "--model-link",
+        default="https://github.com/tliao730/TSorchestra",
+        help="config.json model_link (HF or accessible hub/repo URL).",
+    )
+    parser.add_argument(
+        "--code-link",
+        default="https://github.com/tliao730/TSorchestra",
+        help="config.json code_link (replication code URL).",
+    )
+    parser.add_argument(
+        "--model-dtype",
+        default="bfloat16",
+        help="config.json model_dtype.",
     )
     args = parser.parse_args()
 
@@ -126,13 +163,11 @@ def main() -> None:
 
     config = {
         "model": args.model_name,
-        # Datadog's model card describes Toto-2.0-2.5B-FT as a fine-tuned,
-        # benchmarking-oriented checkpoint. Review before opening the PR.
-        "model_type": "pretrained",
-        "model_dtype": "bfloat16",
-        "model_link": "https://huggingface.co/Datadog/Toto-2.0-2.5B-FT",
-        "code_link": "https://github.com/DataDog/toto",
-        "org": "Datadog",
+        "model_type": args.model_type,
+        "model_dtype": args.model_dtype,
+        "model_link": args.model_link,
+        "code_link": args.code_link,
+        "org": args.org,
         "testdata_leakage": "No",
         "replication_code_available": "Yes",
     }
