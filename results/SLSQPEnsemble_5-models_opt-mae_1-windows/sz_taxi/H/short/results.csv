@@ -1,0 +1,2 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+sz_taxi/H/short,SLSQPEnsemble_5-models_opt-mae_1-windows,6.159509560487553,6.159509560487553,1.7141323192960645,0.5092737613947852,0.8644476262221866,0.2792171218003575,3.606525708328597,2.481835925376122,0.22919928438572357,0.15830131915974985,0.12466484537797871,Transport,1

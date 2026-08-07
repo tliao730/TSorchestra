@@ -1,0 +1,4 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+car_parts/M/short,SLSQPEnsemble_5-models_opt-mae_1-windows,1.6066594608660179,1.6066594608660179,0.4935535142602453,0.91758369425483,0.7926886660130654,1.867380571025427,14.42603648439669,1.2675407136916816,2.728990713977247,1.0626111987710627,0.9428060982025893,Sales,1
+
+

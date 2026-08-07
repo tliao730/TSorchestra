@@ -1,0 +1,10 @@
+{
+    "model": "SLSQPEnsemble_5-models_opt-mae_1-windows",
+    "model_type": "agentic",
+    "model_dtype": "bfloat16",
+    "model_link": "https://github.com/tliao730/TSorchestra",
+    "code_link": "https://github.com/tliao730/TSorchestra",
+    "org": "Melady Lab @ USC",
+    "testdata_leakage": "No",
+    "replication_code_available": "Yes"
+}

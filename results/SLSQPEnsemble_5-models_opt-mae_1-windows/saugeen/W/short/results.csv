@@ -1,0 +1,2 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+saugeen/W/short,SLSQPEnsemble_5-models_opt-mae_1-windows,263.4648981287746,263.4648981287746,7.929201843684409,0.6399450498414689,0.24542780928994024,0.2910713539776212,3.94892908978227,16.231601834963012,0.7070530597452532,0.3453982226719363,0.2769399883303569,Nature,1

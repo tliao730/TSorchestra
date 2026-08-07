@@ -1,0 +1,2 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+kdd_cup_2018/D/short,SLSQPEnsemble_5-models_opt-mae_1-windows,1773.2025034948258,1773.2025034948258,18.024050861075807,1.0844596574743322,0.6521524522865597,0.47897661045382733,7.751870365937759,42.10941110363366,1.112035037174085,0.4759832907659559,0.3769210134023939,Nature,1

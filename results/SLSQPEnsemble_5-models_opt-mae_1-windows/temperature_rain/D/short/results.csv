@@ -1,0 +1,2 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+temperature_rain/D/short,SLSQPEnsemble_5-models_opt-mae_1-windows,180.0495446592017,180.0495446592017,5.893222369203869,1.5221724600201685,27.5711946552138,1.4678903740094165,25.885933683807355,13.418254158391907,1.510653301997166,0.6634705026714377,0.5505628872367314,Nature,1
