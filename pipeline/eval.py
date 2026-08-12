@@ -8,7 +8,7 @@ from src.data.dataset import Dataset
 from src.data.evaluator import Evaluator
 from src.models.common.gluonts_predictor import GluonTSPredictor
 from src.models.ensembles.slsqp import SLSQPEnsemble
-from src.models.foundation import Moirai, Sundial, Toto, Toto2, TimesFM
+from src.models.foundation import Moirai, Sundial, Toto2, TimesFM
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -18,10 +18,12 @@ def main(cfg: DictConfig) -> None:
     logging.basicConfig(**cfg.logging)
 
     # Load models
+    # Variant: Toto 2.0 REPLACES Toto 1.0 (rather than being added alongside it).
+    # In the 5-model run the Toto family took ~60% of the ensemble weight
+    # (Toto1 0.23 + Toto2 0.37), which cost per-config rank stability.
     models = [
         Moirai(batch_size=cfg.batch_size),
         Sundial(batch_size=cfg.batch_size),
-        Toto(batch_size=cfg.batch_size),
         Toto2(batch_size=cfg.batch_size),
         TimesFM(batch_size=cfg.batch_size),
     ]
@@ -31,6 +33,13 @@ def main(cfg: DictConfig) -> None:
         f"Ensembling {len(models)} models: {', '.join([m.alias for m in models])}",
     )
     forecaster = SLSQPEnsemble(models=models, **cfg.ensemble)
+
+    # format_alias() encodes only the model COUNT, metric and window count, so
+    # this variant would otherwise collide with the earlier 4-model run
+    # (Moirai + Sundial + Toto 1.0 + TimesFM) and write into its results dir.
+    # Tag it so both survive side by side. Must be set before GluonTSPredictor
+    # copies the alias (it does so in its __init__).
+    forecaster.alias = f"{forecaster.alias}_toto2"
 
     # Prepare the ensemble for evaluation
     predictor = GluonTSPredictor(
