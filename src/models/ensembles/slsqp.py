@@ -414,8 +414,12 @@ class SLSQPEnsemble(Forecaster):
                 )
             opt_res = self._optimize_weights(y_clean, X_clean, self.metric)
 
-            weights = opt_res.weights
-            self.opt_result_ = opt_res
+        # Every branch above (crps / mase / point) produces opt_res, but this
+        # assignment used to live inside the `else`, so metric="mase" and
+        # metric="crps" left `weights` at its None default and crashed on the
+        # comprehension below with "'NoneType' object is not iterable".
+        weights = opt_res.weights
+        self.opt_result_ = opt_res
 
         self.weights_ = [float(w) for w in weights]
 
