@@ -84,11 +84,18 @@ class Dataset:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
-        # Default test_split and max_windows if not provided (GIFT-Eval conventions)
+        # `windows` references these but nothing ever defines them (upstream
+        # copied GIFT-Eval's Dataset and turned its module constants into
+        # instance attributes without declaring them). The values MUST match
+        # upstream, otherwise the test split differs and results are not
+        # comparable to the leaderboard:
+        # https://github.com/SalesforceAIResearch/gift-eval/blob/main/src/gift_eval/data.py
+        #     TEST_SPLIT = 0.1
+        #     MAX_WINDOW = 20
         if not hasattr(self, "test_split"):
-            self.test_split = 0.5
+            self.test_split = 0.1
         if not hasattr(self, "max_windows"):
-            self.max_windows = 4
+            self.max_windows = 20
 
     @cached_property
     def hf_dataset(self) -> HFDataset:
