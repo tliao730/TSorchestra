@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH --job-name=slsqp_eval
-#SBATCH --array=0-96
-#SBATCH --partition=gpuA40x4
-#SBATCH --mem=200G
+#SBATCH --array=0-96%8
+#SBATCH --partition=gpuA100x4
+#SBATCH --mem=48G
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gpus-per-node=1
 #SBATCH --gpu-bind=closest
-#SBATCH --account=bdem-delta-gpu
-#SBATCH --time=48:00:00
+#SBATCH --account=bcqc-delta-gpu
+#SBATCH --time=06:00:00
 #SBATCH --output=output/logs/%x/out/%A/%a.out
 #SBATCH --error=output/logs/%x/err/%A/%a.err
 #SBATCH --mail-user=tliao730@usc.edu

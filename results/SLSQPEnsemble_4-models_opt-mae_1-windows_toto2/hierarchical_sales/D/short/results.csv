@@ -1,0 +1,3 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+hierarchical_sales/D/short,SLSQPEnsemble_4-models_opt-mae_1-windows_toto2,28.129060093821206,28.129060093821206,2.2817932789189115,0.7393991323311067,0.6228485409837354,1.0541007088799008,7.0030231824270945,5.303683634401773,1.6271114042813337,0.7000289086361078,0.5687319450161777,Sales,1
+

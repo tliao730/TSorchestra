@@ -1,0 +1,2 @@
+dataset,model,eval_metrics/MSE[mean],eval_metrics/MSE[0.5],eval_metrics/MAE[0.5],eval_metrics/MASE[0.5],eval_metrics/MAPE[0.5],eval_metrics/sMAPE[0.5],eval_metrics/MSIS,eval_metrics/RMSE[mean],eval_metrics/NRMSE[mean],eval_metrics/ND[0.5],eval_metrics/mean_weighted_sum_quantile_loss,domain,num_variates
+solar/10T/long,SLSQPEnsemble_4-models_opt-mae_1-windows_toto2,19.91719005473047,19.91719005473047,1.8380664194610001,0.804188130199961,3.5962783095478192,1.446720393185537,3.9106650600942756,4.462867918136326,0.964577496263907,0.39726864818146684,0.2965226146985891,Energy,1
