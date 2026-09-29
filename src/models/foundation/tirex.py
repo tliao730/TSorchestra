@@ -64,19 +64,23 @@ class TiRex(Forecaster):
         self.repo_id = repo_id
         self.batch_size = batch_size
         self.alias = alias
+        # Loaded lazily on first use and reused afterwards. Inside the ensemble,
+        # GluonTSPredictor.predict() calls forecast() once per batch of series, so
+        # re-running load_model() every call would reload the checkpoint hundreds
+        # of times on a large config. Mirrors the Toto2 / TimesFM caching fixes.
+        self._model: PretrainedModel | None = None
 
     @contextmanager
     def _get_model(self) -> PretrainedModel:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        if device == "cpu":
-            # see https://github.com/NX-AI/tirex/tree/main?tab=readme-ov-file#cuda-kernels
-            os.environ["TIREX_NO_CUDA"] = "1"
-        model = load_model(self.repo_id, device=device)
-        try:
-            yield model
-        finally:
-            del model
-            torch.cuda.empty_cache()
+        if self._model is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            if device == "cpu":
+                # see https://github.com/NX-AI/tirex/tree/main?tab=readme-ov-file#cuda-kernels
+                os.environ["TIREX_NO_CUDA"] = "1"
+            self._model = load_model(self.repo_id, device=device)
+        # No teardown: the model is cached for the next batch. Only one copy is
+        # ever held, so GPU memory stays bounded.
+        yield self._model
 
     def _forecast(
         self,
