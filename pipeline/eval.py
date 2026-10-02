@@ -8,7 +8,7 @@ from src.data.dataset import Dataset
 from src.data.evaluator import Evaluator
 from src.models.common.gluonts_predictor import GluonTSPredictor
 from src.models.ensembles.slsqp import SLSQPEnsemble
-from src.models.foundation import Moirai, Sundial, Toto2, TimesFM
+from src.models.foundation import Moirai, TiRex, Toto2, TimesFM
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -18,12 +18,15 @@ def main(cfg: DictConfig) -> None:
     logging.basicConfig(**cfg.logging)
 
     # Load models
-    # Variant: Toto 2.0 REPLACES Toto 1.0 (rather than being added alongside it).
-    # In the 5-model run the Toto family took ~60% of the ensemble weight
-    # (Toto1 0.23 + Toto2 0.37), which cost per-config rank stability.
+    # Variant: TiRex REPLACES Sundial (Toto 2.0 already replaced Toto 1.0).
+    # Sundial was the weakest member of the previous 4-model run: worst standalone
+    # MASE (1.0487) and the only member whose weight positively correlated with
+    # falling behind the leaders (+0.398). TiRex is the strongest single model
+    # available here (0.9473, better than Toto2's 0.9494) and is an xLSTM rather
+    # than a transformer, so it should also decorrelate the pool a little.
     models = [
         Moirai(batch_size=cfg.batch_size),
-        Sundial(batch_size=cfg.batch_size),
+        TiRex(batch_size=cfg.batch_size),
         Toto2(batch_size=cfg.batch_size),
         TimesFM(batch_size=cfg.batch_size),
     ]
@@ -35,11 +38,13 @@ def main(cfg: DictConfig) -> None:
     forecaster = SLSQPEnsemble(models=models, **cfg.ensemble)
 
     # format_alias() encodes only the model COUNT, metric and window count, so
-    # this variant would otherwise collide with the earlier 4-model run
-    # (Moirai + Sundial + Toto 1.0 + TimesFM) and write into its results dir.
-    # Tag it so both survive side by side. Must be set before GluonTSPredictor
-    # copies the alias (it does so in its __init__).
-    forecaster.alias = f"{forecaster.alias}_toto2"
+    # every 4-model variant would otherwise share one results directory. Tag the
+    # member set so they survive side by side:
+    #   _toto2        = Moirai + Sundial  + Toto2 + TimesFM
+    #   _toto2-tirex  = Moirai + TiRex    + Toto2 + TimesFM  (this one)
+    # Must be set before GluonTSPredictor copies the alias (it does so in
+    # its __init__).
+    forecaster.alias = f"{forecaster.alias}_toto2-tirex"
 
     # Prepare the ensemble for evaluation
     predictor = GluonTSPredictor(

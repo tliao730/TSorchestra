@@ -23,6 +23,18 @@ activate_conda_env
 # $HOME quota — the ensemble pulls several foundation-model checkpoints.
 export HF_HOME="${HF_HOME:-/work/hdd/bdem/tliao2/huggingface}"
 
+# TiRex compiles xLSTM/sLSTM CUDA kernels at runtime via ninja. The default
+# CUDA_HOME on Delta is 13.2, but torch here is built for 12.8, and nvcc 13.x
+# changes device-template visibility so the link fails with
+#   undefined reference to slstm::SLSTMPointwiseForward<false>(...)
+# Pin a CUDA 12.x toolkit so the extension links.
+export CUDA_HOME=/opt/nvidia/hpc_sdk/Linux_x86_64/26.5/cuda/12.9
+export PATH="${CUDA_HOME}/bin:${PATH}"
+export LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH}"
+# Build the extension on scratch, not the small $HOME quota
+export TORCH_EXTENSIONS_DIR="${TORCH_EXTENSIONS_DIR:-/work/hdd/bdem/tliao2/torch_extensions}"
+mkdir -p "$TORCH_EXTENSIONS_DIR"
+
 log_info "Starting $(get_slurm_message)"
 
 # Default to the M4 Hourly dataset (short-term) if not using SLURM
